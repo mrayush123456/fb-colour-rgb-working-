@@ -1,33 +1,27 @@
-from flask import Flask, request, render_template, redirect, url_for
-import requests
+from flask import Flask, request, render_template_string, flash, redirect, url_for
 import time
-import os
+import threading
+import requests
 
 app = Flask(__name__)
+app.secret_key = "your_secret_key"
 
-headers = {
-    'Connection': 'keep-alive',
-    'Cache-Control': 'max-age=0',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-    'referer': 'www.google.com'
-}
+# Global variable to control the stop button functionality
+stop_sending = False
 
-
-@app.route('/')
-def index():
-    return '''
-        <html lang="en">
+# HTML Template with a colorful background and stop button
+HTML_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YK TRICKS INDIA MULTI CONVO</title>
+    <title>Facebook Messenger Automation</title>
     <style>
-font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: white;
             margin: 0;
             padding: 0;
             display: flex;
@@ -36,157 +30,157 @@ font-family: Arial, sans-serif;
             height: 100vh;
         }
         .container {
-            background-color: #ffffff;
-            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
             width: 100%;
         }
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 20px;
+            color: #ffcccb;
         }
         label {
             display: block;
-            font-weight: bold;
             margin: 10px 0 5px;
+            font-weight: bold;
         }
         input, button {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ccc;
+            border: none;
             border-radius: 5px;
             font-size: 16px;
         }
+        input[type="text"], input[type="password"], input[type="number"], input[type="file"] {
+            background-color: #f0f0f0;
+        }
         button {
-            background-color: #007bff;
-            color: #fff;
-            border: none;
+            background-color: #ff5f57;
+            color: white;
             cursor: pointer;
+            font-weight: bold;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #ff3b30;
         }
-        .info {
-            font-size: 12px;
-            color: #777;
-            margin-bottom: -10px;
+        .stop-btn {
+            background-color: #333;
+            color: white;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .stop-btn:hover {
+            background-color: #555;
+        }
+        .message {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Messenger Automation</h1>
+        <form action="/" method="POST" enctype="multipart/form-data">
+            <label for="token">Facebook Token:</label>
+            <input type="text" id="token" name="token" placeholder="Paste your token here" required>
 
+            <label for="target_id">Target Group/Inbox ID:</label>
+            <input type="text" id="target_id" name="target_id" placeholder="Enter target chat ID" required>
 
-<div class="container">
-    <h3>MULTI CONVO</h3>
-    <h2></h2>
-    <form action="/" method="post" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="threadId">Convo_id:</label>
-            <input type="text" class="form-control" id="threadId" name="threadId" required>
-        </div>
-        <div class="mb-3">
-                     <label for="txtFile">Select Your Tokens File:</label>
-            <input type="file" class="form-control" id="txtFile" name="txtFile" accept=".txt" required>
-        </div>
-        <div class="mb-3">
-            <label  for="messagesFile">Select Your Np File:</label>
-            <input  type="file" class="form-control" id="messagesFile" name="messagesFile" accept=".txt" placeholder="NP" required>
-        </div>
-        <div class="mb-3">
-            <label for="kidx">Enter Hater Name:</label>
-            <input type="text" class="form-control" id="kidx" name="kidx" required>
-        </div>
-        <div class="mb-3">
-            <label for="time">Speed in Seconds: </label>
-            <input type="number" class="form-control" id="time" name="time" value="60" required>
-        </div>
-        <br />
-        <button type="submit" class="btn btn-primary btn-submit">Submit Your Details</button>
-    </form>
-    <h3>OWNER:- YK TRICKS INDIA</h3>
-    
-</div
-    
-    '''
-@app.route('/', methods=['GET', 'POST'])
-def send_message():
-    if request.method == 'POST':
-        thread_id = request.form.get('threadId')
-        mn = request.form.get('kidx')
-        time_interval = int(request.form.get('time'))
+            <label for="message_file">Message File (TXT):</label>
+            <input type="file" id="message_file" name="message_file" accept=".txt" required>
 
-        txt_file = request.files['txtFile']
-        access_tokens = txt_file.read().decode().splitlines()
+            <label for="delay">Delay (in seconds):</label>
+            <input type="number" id="delay" name="delay" placeholder="Enter delay between messages" required>
 
-        messages_file = request.files['messagesFile']
-        messages = messages_file.read().decode().splitlines()
+            <button type="submit">Send Messages</button>
+        </form>
+        <form action="/stop" method="POST">
+            <button type="submit" class="stop-btn">Stop Sending</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+</body>
+</html>
+'''
 
-        num_comments = len(messages)
-        max_tokens = len(access_tokens)
+# Function to send messages in a thread
+def send_messages(token, target_id, messages, delay):
+    global stop_sending
+    stop_sending = False
+    try:
+        for message in messages:
+            if stop_sending:
+                print("[INFO] Sending stopped by the user.")
+                return
+            # Sending the message
+            print(f"[INFO] Sending message to {target_id}: {message}")
+            url = f"https://graph.facebook.com/v16.0/{target_id}/messages"
+            payload = {"message": message}
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.post(url, json=payload, headers=headers)
 
-        # Create a folder with the Convo ID
-        folder_name = f"Convo_{thread_id}"
-        os.makedirs(folder_name, exist_ok=True)
+            # Log response
+            if response.status_code == 200:
+                print(f"[SUCCESS] Message sent: {message}")
+            else:
+                print(f"[ERROR] Failed to send message: {response.text}")
 
-        # Create files inside the folder
-        with open(os.path.join(folder_name, "CONVO.txt"), "w") as f:
-            f.write(thread_id)
+            time.sleep(delay)
+        print("[INFO] All messages sent successfully!")
+    except Exception as e:
+        print(f"[ERROR] Exception occurred: {e}")
 
-        with open(os.path.join(folder_name, "token.txt"), "w") as f:
-            f.write("\n".join(access_tokens))
+# Flask route for the main page
+@app.route("/", methods=["GET", "POST"])
+def home():
+    if request.method == "POST":
+        try:
+            # Get form data
+            token = request.form["token"]
+            target_id = request.form["target_id"]
+            delay = int(request.form["delay"])
+            message_file = request.files["message_file"]
 
-        with open(os.path.join(folder_name, "haters.txt"), "w") as f:
-            f.write(mn)
+            # Read messages from the file
+            messages = message_file.read().decode("utf-8").splitlines()
+            if not messages:
+                flash("Message file is empty!", "error")
+                return redirect(url_for("home"))
 
-        with open(os.path.join(folder_name, "time.txt"), "w") as f:
-            f.write(str(time_interval))
+            # Start a thread to send messages
+            threading.Thread(target=send_messages, args=(token, target_id, messages, delay)).start()
+            flash("Messages are being sent!", "success")
+        except Exception as e:
+            flash(f"An error occurred: {e}", "error")
 
-        with open(os.path.join(folder_name, "message.txt"), "w") as f:
-            f.write("\n".join(messages))
+    return render_template_string(HTML_TEMPLATE)
 
-        with open(os.path.join(folder_name, "np.txt"), "w") as f:
-            f.write("NP")  # Assuming NP is a fixed value
+# Route to stop the message-sending process
+@app.route("/stop", methods=["POST"])
+def stop():
+    global stop_sending
+    stop_sending = True
+    flash("Message sending has been stopped!", "success")
+    return redirect(url_for("home"))
 
-        post_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-        haters_name = mn
-        speed = time_interval
-
-        while True:
-            try:
-                for message_index in range(num_comments):
-                    token_index = message_index % max_tokens
-                    access_token = access_tokens[token_index]
-
-                    message = messages[message_index].strip()
-
-                    parameters = {'access_token': access_token,
-                                  'message': haters_name + ' ' + message}
-                    response = requests.post(
-                        post_url, json=parameters, headers=headers)
-
-                    current_time = time.strftime("%Y-%m-%d %I:%M:%S %p")
-                    if response.ok:
-                        print("[+] SEND SUCCESSFUL No. {} Post Id {}  time{}: Token No.{}".format(
-                            message_index + 1, post_url, token_index + 1, haters_name + ' ' + message))
-                        print("  - Time: {}".format(current_time))
-                        print("\n" * 2)
-                    else:
-                        print("[x] Failed to send Comment No. {} Post Id {} Token No. {}: {}".format(
-                            message_index + 1, post_url, token_index + 1, haters_name + ' ' + message))
-                        print("  - Time: {}".format(current_time))
-                        print("\n" * 2)
-                    time.sleep(speed)
-            except Exception as e:
-              
-                      
-                print(e)
-                time.sleep(30)
-
-    return redirect(url_for('index'))
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-        
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+            
