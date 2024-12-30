@@ -2,8 +2,8 @@ from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-# HTML template as a string
-HTML_TEMPLATE = """
+# HTML Template
+html_template = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -104,6 +104,8 @@ HTML_TEMPLATE = """
     <div class="container">
         <h1>Extractor 2.0</h1>
         <h2>Get Tokens Free</h2>
+     
+
         <form method="post">
             <div class="form-group">
                 <label for="cookies">Paste your JSON Cookies:</label>
@@ -111,9 +113,10 @@ HTML_TEMPLATE = """
             </div>
             <input type="submit" value="Get Token">
         </form>
+
         {% if token %}
         <div class="card">
-            <h2>Your Token:</h2>
+            <h2>Your Access Token:</h2>
             <pre>{{ token }}</pre>
         </div>
         {% endif %}
@@ -122,15 +125,20 @@ HTML_TEMPLATE = """
 </html>
 """
 
-@app.route("/", methods=["GET", "POST"])
-def get_token():
+@app.route('/', methods=['GET', 'POST'])
+def index():
     token = None
-    if request.method == "POST":
-        cookies = request.form.get("cookies")
-        # Process cookies to extract the token (placeholder logic)
-        token = f"Extracted Token from cookies: {cookies[:30]}..."  # Example
-    return render_template_string(HTML_TEMPLATE, token=token)
+    if request.method == 'POST':
+        cookies = request.form.get('cookies')
+        try:
+            # Extract the token from the JSON input (simulate parsing logic)
+            # Replace this logic with actual cookie parsing as needed
+            token = "dummy_token_extracted_from_cookies"
+        except Exception as e:
+            token = f"Error parsing cookies: {str(e)}"
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    return render_template_string(html_template, token=token)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
     
