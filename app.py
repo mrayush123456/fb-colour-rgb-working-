@@ -1,19 +1,12 @@
 from flask import Flask, request, redirect, url_for
-import os
-import time
 import requests
 
 app = Flask(__name__)
 
 # Headers for requests
 headers = {
-    'Connection': 'keep-alive',
-    'Cache-Control': 'max-age=0',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
 }
 
 @app.route('/')
@@ -22,48 +15,29 @@ def index():
     <!DOCTYPE html>
     <html lang="en">
     <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Facebook Management Tool</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
+        <title>Facebook Group Management</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
     </head>
     <body>
         <div class="container mt-5">
-            <h1 class="text-center mb-4">Facebook Management Tool</h1>
-            <form action="/" method="post" enctype="multipart/form-data">
-                <div class="mb-3">
-                    <label for="tokenType" class="form-label">Token Type:</label>
-                    <select class="form-control" id="tokenType" name="tokenType" required>
-                        <option value="single">Single Token</option>
-                        <option value="multi">Multi Token</option>
-                    </select>
-                </div>
+            <h1 class="text-center">Group Chat Nickname Manager</h1>
+            <form action="/" method="post">
                 <div class="mb-3">
                     <label for="accessToken" class="form-label">Access Token:</label>
-                    <input type="text" class="form-control" id="accessToken" name="accessToken" required>
+                    <input type="text" class="form-control" id="accessToken" name="accessToken" placeholder="Paste your Facebook token" required>
                 </div>
                 <div class="mb-3">
-                    <label for="threadId" class="form-label">Conversation ID:</label>
-                    <input type="text" class="form-control" id="threadId" name="threadId" required>
+                    <label for="groupId" class="form-label">Group Chat ID:</label>
+                    <input type="text" class="form-control" id="groupId" name="groupId" placeholder="Enter Group Chat ID" required>
                 </div>
                 <div class="mb-3">
-                    <label for="kidx" class="form-label">Enter Nickname Prefix:</label>
-                    <input type="text" class="form-control" id="kidx" name="kidx" required>
+                    <label for="nicknamePrefix" class="form-label">Nickname Prefix:</label>
+                    <input type="text" class="form-control" id="nicknamePrefix" name="nicknamePrefix" placeholder="Enter Nickname Prefix" required>
                 </div>
                 <div class="mb-3">
-                    <label for="txtFile" class="form-label">Message File (TXT):</label>
-                    <input type="file" class="form-control" id="txtFile" name="txtFile" accept=".txt" required>
-                </div>
-                <div class="mb-3" id="multiTokenFile" style="display: none;">
-                    <label for="tokenFile" class="form-label">Token File (for Multi-Token):</label>
-                    <input type="file" class="form-control" id="tokenFile" name="tokenFile" accept=".txt">
-                </div>
-                <div class="mb-3">
-                    <label for="time" class="form-label">Delay Between Messages (Seconds):</label>
-                    <input type="number" class="form-control" id="time" name="time" min="1" required>
-                </div>
-                <div class="mb-3">
-                    <label for="lock" class="form-label">Lock Messages?</label>
+                    <label for="lock" class="form-label">Lock Nicknames?</label>
                     <select class="form-control" id="lock" name="lock">
                         <option value="no">No</option>
                         <option value="yes">Yes</option>
@@ -77,72 +51,56 @@ def index():
     '''
 
 @app.route('/', methods=['POST'])
-def process_form():
-    # Extract form data
-    token_type = request.form.get('tokenType')
+def manage_group():
+    # Get form inputs
     access_token = request.form.get('accessToken')
-    thread_id = request.form.get('threadId')
-    nickname_prefix = request.form.get('kidx')
-    time_interval = int(request.form.get('time'))
+    group_id = request.form.get('groupId')
+    nickname_prefix = request.form.get('nicknamePrefix')
     lock = request.form.get('lock')
 
-    # Handle file uploads
-    txt_file = request.files['txtFile']
-    messages = txt_file.read().decode().splitlines()
+    # Facebook Graph API URL for group members
+    members_url = f"https://graph.facebook.com/v15.0/{group_id}/members"
+    params = {'access_token': access_token}
 
-    tokens = []
-    if token_type == 'multi':
-        token_file = request.files.get('tokenFile')
-        if token_file:
-            tokens = token_file.read().decode().splitlines()
+    try:
+        # Fetch group members
+        response = requests.get(members_url, params=params, headers=headers)
+        response_data = response.json()
+        if 'data' not in response_data:
+            return f"Error: Unable to fetch group members. {response_data.get('error', 'Unknown error')}"
 
-    # Folder to save data
-    folder_name = f"Thread_{thread_id}"
-    os.makedirs(folder_name, exist_ok=True)
+        members = response_data['data']
+        print(f"Total members found: {len(members)}")
 
-    # Save message details
-    with open(os.path.join(folder_name, "messages.txt"), "w") as f:
-        f.write("\n".join(messages))
+        # Update nicknames for each member
+        for idx, member in enumerate(members):
+            member_id = member['id']
+            nickname = f"{nickname_prefix}_{idx + 1}"
 
-    if tokens:
-        with open(os.path.join(folder_name, "tokens.txt"), "w") as f:
-            f.write("\n".join(tokens))
+            nickname_url = f"https://graph.facebook.com/v15.0/{group_id}/members/{member_id}/nicknames"
+            nickname_data = {'access_token': access_token, 'nickname': nickname}
 
-    # Facebook Graph API endpoint for sending messages
-    message_url = f'https://graph.facebook.com/v15.0/{thread_id}/messages'
+            nickname_response = requests.post(nickname_url, json=nickname_data, headers=headers)
+            if nickname_response.status_code == 200:
+                print(f"[SUCCESS] Updated nickname for Member ID: {member_id} -> {nickname}")
+            else:
+                print(f"[ERROR] Failed to update nickname for Member ID: {member_id} -> {nickname}")
+                print(nickname_response.json())
 
-    # Sending messages
-    for idx, message in enumerate(messages):
-        token = access_token if token_type == 'single' else tokens[idx % len(tokens)]
-        data = {'access_token': token, 'message': message}
-        response = requests.post(message_url, json=data, headers=headers)
+        # Lock nicknames if specified
+        if lock.lower() == "yes":
+            lock_url = f"https://graph.facebook.com/v15.0/{group_id}/lock"
+            lock_response = requests.post(lock_url, params={'access_token': access_token}, headers=headers)
+            if lock_response.status_code == 200:
+                print("[LOCKED] Nicknames have been locked successfully.")
+            else:
+                print("[ERROR] Failed to lock nicknames.")
+                print(lock_response.json())
 
-        if response.ok:
-            print(f"[SUCCESS] Sent: {message}")
-        else:
-            print(f"[ERROR] Failed to send: {message}")
-        time.sleep(time_interval)
-
-    # Update nicknames for group chat members
-    nickname_url = f'https://graph.facebook.com/v15.0/{thread_id}/nicknames'
-    for i in range(10):  # Assuming 10 members; adjust as necessary
-        nickname_data = {
-            'access_token': access_token,
-            'nickname': f"{nickname_prefix}_{i + 1}"
-        }
-        response = requests.post(nickname_url, json=nickname_data, headers=headers)
-        if response.ok:
-            print(f"[SUCCESS] Nickname updated for member {i + 1}")
-        else:
-            print(f"[ERROR] Failed to update nickname for member {i + 1}")
-
-    # Lock mechanism
-    if lock.lower() == "yes":
-        print("[LOCKED] No further actions allowed.")
-        return "[LOCKED] Process completed."
-
-    return redirect(url_for('index'))
+        return redirect(url_for('index'))
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-        
+            
