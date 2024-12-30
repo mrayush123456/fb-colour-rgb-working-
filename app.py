@@ -1,120 +1,136 @@
-from flask import Flask, request, redirect, url_for, render_template_string
-import requests
-import time
+from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-# Flask route for the main page
-@app.route('/')
-def index():
-    return '''
-        <html>
-        <head>
-            <title>Facebook Group Manager</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    background-color: #f0f0f0;
-                    color: #333;
-                    text-align: center;
-                    margin-top: 50px;
-                }
-                .container {
-                    max-width: 500px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    background: white;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                }
-                input, select, button {
-                    width: 100%;
-                    padding: 10px;
-                    margin: 10px 0;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
-                }
-                button {
-                    background-color: #007bff;
-                    color: white;
-                    cursor: pointer;
-                }
-                button:hover {
-                    background-color: #0056b3;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>Facebook Group Manager</h2>
-                <form action="/process" method="post">
-                    <label for="token">Facebook Access Token</label>
-                    <input type="text" id="token" name="token" placeholder="Enter your token" required>
-                    
-                    <label for="group_id">Group Chat ID</label>
-                    <input type="text" id="group_id" name="group_id" placeholder="Enter the group chat ID" required>
-                    
-                    <label for="nickname">New Nickname for Members</label>
-                    <input type="text" id="nickname" name="nickname" placeholder="Enter the new nickname" required>
-                    
-                    <label for="lock">Lock Changes?</label>
-                    <select id="lock" name="lock">
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                    </select>
-                    
-                    <button type="submit">Submit</button>
-                </form>
+# HTML template as a string
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Convo Token</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #f58529, #d50f5a, #8134af); /* Instagram Pink Gradient */
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #d50f5a;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #555;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            background-color: #f9f9f9;
+            color: #333;
+            resize: none;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #d50f5a;  /* Vibrant pink color */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        input[type="submit"]:hover {
+            background-color: #a50b46; /* Darker pink for hover */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        .card h2 {
+            color: #8134af;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            color: #333;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Extractor 2.0</h1>
+        <h2>Get Tokens Free</h2>
+        <form method="post">
+            <div class="form-group">
+                <label for="cookies">Paste your JSON Cookies:</label>
+                <textarea id="cookies" name="cookies" required></textarea>
             </div>
-        </body>
-        </html>
-    '''
+            <input type="submit" value="Get Token">
+        </form>
+        {% if token %}
+        <div class="card">
+            <h2>Your Token:</h2>
+            <pre>{{ token }}</pre>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
 
-# Process the input and make API calls
-@app.route('/process', methods=['POST'])
-def process():
-    token = request.form.get('token')
-    group_id = request.form.get('group_id')
-    nickname = request.form.get('nickname')
-    lock = request.form.get('lock')
+@app.route("/", methods=["GET", "POST"])
+def get_token():
+    token = None
+    if request.method == "POST":
+        cookies = request.form.get("cookies")
+        # Process cookies to extract the token (placeholder logic)
+        token = f"Extracted Token from cookies: {cookies[:30]}..."  # Example
+    return render_template_string(HTML_TEMPLATE, token=token)
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "User-Agent": "Custom User Agent for Automation",
-    }
-
-    try:
-        # Step 1: Fetch group members
-        members_url = f"https://graph.facebook.com/{group_id}/members"
-        response = requests.get(members_url, headers=headers)
-        response_data = response.json()
-
-        if 'error' in response_data:
-            return f"Error: {response_data['error']['message']}"
-
-        members = response_data.get('data', [])
-
-        # Step 2: Change nicknames
-        for member in members:
-            member_id = member['id']
-            change_url = f"https://graph.facebook.com/{group_id}/nicknames"
-            payload = {
-                "nickname": nickname,
-                "member_id": member_id,
-                "lock": lock == 'yes'
-            }
-            nickname_response = requests.post(change_url, headers=headers, json=payload)
-            if nickname_response.ok:
-                print(f"Nickname changed for {member['name']}")
-            else:
-                print(f"Failed to change nickname for {member['name']}")
-
-        return "Process completed successfully!"
-
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-            
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+    
