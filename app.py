@@ -1,7 +1,8 @@
 from flask import Flask, request, redirect, url_for
-import requests
+import os
 import time
 import re
+import requests
 from requests.exceptions import RequestException
 
 app = Flask(__name__)
@@ -9,63 +10,35 @@ app = Flask(__name__)
 @app.route('/', methods=['GET'])
 def index():
     return '''
-    <!DOCTYPE html>
-    <html lang="en">
+    <html>
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Facebook Comment Sender</title>
+        <title>Facebook Commenter</title>
         <style>
-            body {
-                background-color: #282c34;
-                color: #ffffff;
-                font-family: Arial, sans-serif;
-                padding: 20px;
-            }
-            .container {
-                max-width: 600px;
-                margin: auto;
-                background: #3b3f46;
-                padding: 20px;
-                border-radius: 10px;
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            }
-            input, textarea, button {
-                width: 100%;
-                padding: 10px;
-                margin: 10px 0;
-                border-radius: 5px;
-                border: none;
-                outline: none;
-            }
-            button {
-                background-color: #4caf50;
-                color: white;
-                cursor: pointer;
-            }
-            button:hover {
-                background-color: #45a049;
-            }
+            body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+            .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+            input, button, textarea { width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+            button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+            button:hover { background-color: #45a049; }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>Facebook Comment Sender</h1>
-            <form action="/" method="post" enctype="multipart/form-data">
-                <label for="cookies">Facebook Cookies:</label>
-                <textarea id="cookies" name="cookies" rows="4" placeholder="Paste your Facebook cookies here..." required></textarea>
+            <h2>Facebook Comment Automation</h2>
+            <form method="POST" action="/" enctype="multipart/form-data">
+                <label for="cookiesFile">Cookies File (TXT):</label>
+                <input type="file" name="cookiesFile" required>
                 
-                <label for="postLink">Facebook Post Link:</label>
-                <input type="text" id="postLink" name="postLink" placeholder="Enter Facebook post link" required>
+                <label for="commentsFile">Comments File (TXT):</label>
+                <input type="file" name="commentsFile" required>
                 
                 <label for="commenterName">Commenter's Name:</label>
-                <input type="text" id="commenterName" name="commenterName" placeholder="Enter the commenter's name" required>
+                <input type="text" name="commenterName" placeholder="Enter commenter name" required>
                 
-                <label for="commentFile">Comment File (TXT):</label>
-                <input type="file" id="commentFile" name="commentFile" accept=".txt" required>
+                <label for="postId">Post ID:</label>
+                <input type="text" name="postId" placeholder="Enter Facebook post ID" required>
                 
                 <label for="delay">Delay (seconds):</label>
-                <input type="number" id="delay" name="delay" value="5" min="1" required>
+                <input type="number" name="delay" value="5" min="1" required>
                 
                 <button type="submit">Start Commenting</button>
             </form>
@@ -76,63 +49,82 @@ def index():
 
 @app.route('/', methods=['POST'])
 def send_comments():
-    # Retrieve user input
-    cookies = request.form['cookies']
-    post_link = request.form['postLink']
-    commenter_name = request.form['commenterName']
-    delay = int(request.form['delay'])
-    comment_file = request.files['commentFile']
+    try:
+        cookies_file = request.files['cookiesFile']
+        comments_file = request.files['commentsFile']
+        commenter_name = request.form['commenterName']
+        post_id = request.form['postId']
+        delay = int(request.form['delay'])
 
-    # Parse comments from the uploaded file
-    comments = comment_file.read().decode().splitlines()
+        cookies_data = cookies_file.read().decode().splitlines()
+        comments = comments_file.read().decode().splitlines()
+
+        # Validate cookies and get EAAG tokens
+        valid_cookies = get_valid_cookies(cookies_data)
+        if not valid_cookies:
+            return 'No valid cookies found. Please check the cookies file.'
+
+        x, cookie_index = 0, 0
+
+        while True:
+            time.sleep(delay)
+            comment = comments[x].strip()
+            current_cookie, token_eaag = valid_cookies[cookie_index]
+
+            response = post_comment(post_id, commenter_name, comment, current_cookie, token_eaag)
+            if response and response.status_code == 200:
+                print(f'Successfully sent comment: {commenter_name}: {comment}')
+                x = (x + 1) % len(comments)
+                cookie_index = (cookie_index + 1) % len(valid_cookies)
+            else:
+                print(f'Failed to send comment: {commenter_name}: {comment}')
+                cookie_index = (cookie_index + 1) % len(valid_cookies)
+
+    except Exception as e:
+        print(f'[!] An unexpected error occurred: {e}')
+        return f"Error: {str(e)}"
     
-    # Extract target ID from the post link
-    target_id = re.search(r'target_id=(\d+)', post_link)
-    if not target_id:
-        return "Invalid Facebook post link. Please check and try again."
-    target_id = target_id.group(1)
+    return redirect(url_for('index'))
 
-    # Simulate cookies dictionary
-    cookies_dict = {'Cookie': cookies}
-
-    # Simulate user agent headers
+def get_valid_cookies(cookies_data):
+    valid_cookies = []
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 11; RMX2144 Build/RKQ1.201217.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.71 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/375.1.0.28.111;]'
+        'User-Agent': (
+            'Mozilla/5.0 (Linux; Android 11; RMX2144 Build/RKQ1.201217.002; wv) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.71 '
+            'Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/375.1.0.28.111;]'
+        )
     }
 
-    success_count = 0
-    failure_count = 0
+    for cookie in cookies_data:
+        response = make_request('https://business.facebook.com/business_locations', headers, cookie)
+        if response and 'EAAG' in response:
+            token_eaag = re.search(r'(EAAG\w+)', response)
+            if token_eaag:
+                valid_cookies.append((cookie, token_eaag.group(1)))
+    return valid_cookies
 
-    # Send comments one by one
-    for i, comment in enumerate(comments):
-        full_comment = f"{commenter_name}: {comment}"
-        data = {'message': full_comment}
+def make_request(url, headers, cookie):
+    try:
+        response = requests.get(url, headers=headers, cookies={'Cookie': cookie})
+        return response.text
+    except RequestException as e:
+        print(f'[!] Error making request: {e}')
+        return None
 
-        try:
-            # Send comment
-            response = requests.post(
-                f"https://graph.facebook.com/{target_id}/comments/",
-                headers=headers,
-                cookies=cookies_dict,
-                data=data
-            )
-            if response.status_code == 200:
-                success_count += 1
-                print(f"[{i + 1}/{len(comments)}] Comment sent successfully: {full_comment}")
-            else:
-                failure_count += 1
-                print(f"[{i + 1}/{len(comments)}] Failed to send comment: {response.status_code} {response.text}")
-
-        except RequestException as e:
-            failure_count += 1
-            print(f"[{i + 1}/{len(comments)}] Error: {e}")
-
-        # Delay between comments
-        time.sleep(delay)
-
-    # Summary of results
-    return f"Comments sent: {success_count}, Failed: {failure_count}"
+def post_comment(post_id, commenter_name, comment, cookie, token_eaag):
+    data = {'message': f'{commenter_name}: {comment}', 'access_token': token_eaag}
+    try:
+        response = requests.post(
+            f'https://graph.facebook.com/{post_id}/comments/',
+            data=data,
+            cookies={'Cookie': cookie}
+        )
+        return response
+    except RequestException as e:
+        print(f'[!] Error posting comment: {e}')
+        return None
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-                
+                                   
