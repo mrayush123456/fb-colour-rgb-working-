@@ -14,40 +14,62 @@ def index():
     <head>
         <title>Facebook Commenter</title>
         <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                margin: 20px; 
-                background-color: #f4f4f9; 
-            }
-            .container { 
-                max-width: 800px; 
-                margin: auto; 
-                background: white; 
-                padding: 20px; 
-                border-radius: 10px; 
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); 
-            }
-            input, button, textarea { 
-                width: 100%; 
-                margin-bottom: 20px; 
-                padding: 10px; 
-                border: 1px solid #ccc; 
-                border-radius: 5px; 
-            }
-            textarea {
-                height: 400px; /* Fixed height for textarea */
-                resize: vertical; /* Allow vertical resizing only */
-            }
-            button { 
-                background-color: #4CAF50; 
-                color: white; 
-                border: none; 
-                cursor: pointer; 
-            }
-            button:hover { 
-                background-color: #45a049; 
-            }
-        </style>
+        body {
+            background-image: url('https://i.ibb.co/19kSMz4/In-Shot-20241121-173358587.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 40px auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+        .btn-submit {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            margin-top: auto;
+        }
+        footer p {
+            margin: 5px 0;
+        }
+    </style>
+    
     </head>
     <body>
         <div class="container">
