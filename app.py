@@ -14,32 +14,32 @@ def index():
     <head>
         <title>Facebook Comment Automation</title>
         <style>
-    body{
-      background-color: red;
-    }
-    .container{
-      max-width: 100px;
-      background-color: bisque;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(red,green,blue,alpha);
-      margin: 0 auto;
-      margin-top: 20px;
-    }
-    .header{
-      text-align: center;
-      padding-bottom: 20px;
-    }
-    .btn-submit{
-      width: 100%;
-      margin-top: 10px;
-    }
-    .footer{
-      text-align: center;
-      margin-top: 20px;
-      color: brown;
-    }
-  </style>
+            body {
+              background-color: white;
+            }
+            .container {
+              max-width: 370px;
+              background-color: yellow;
+              border-radius: 10px;
+              padding: 20px;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              margin: 0 auto;
+              margin-top: 20px;
+            }
+            .header {
+              text-align: center;
+              padding-bottom: 10px;
+            }
+            .btn-submit {
+              width: 100%;
+              margin-top: 10px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 10px;
+              color: blue;
+            }
+          </style>
     </head>
     <body>
         <div class="container">
