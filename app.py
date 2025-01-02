@@ -16,55 +16,42 @@ def index():
         <style>
             body { 
                 font-family: Arial, sans-serif; 
-                margin: 0; 
-                padding: 0; 
-                background: linear-gradient(120deg, #f6d365, #fda085);
-                color: #333;
+                margin: 20px; 
+                background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff); 
+                background-size: 400% 400%; 
+                animation: gradientAnimation 10s ease infinite; 
             }
             .container { 
-                max-width: 90%; 
-                margin: 5% auto; 
+                max-width: 600px; 
+                margin: auto; 
                 background: white; 
                 padding: 20px; 
                 border-radius: 8px; 
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
-                animation: fadeIn 1.5s ease-in-out;
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); 
             }
             input, button, textarea { 
                 width: 100%; 
-                margin-bottom: 15px; 
-                padding: 15px; 
+                margin-bottom: 10px; 
+                padding: 10px; 
                 border: 1px solid #ccc; 
-                border-radius: 8px; 
-                box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
-            }
-            textarea {
-                height: 400px; /* Large height for textarea */
-                background: rgba(245, 245, 245, 0.9);
-                font-size: 16px;
-                color: #333;
-                resize: none; /* Disable resizing */
-                transition: background 0.5s ease;
-            }
-            textarea:focus {
-                background: rgba(255, 255, 255, 1);
-                border-color: #4CAF50;
-                outline: none;
-                box-shadow: 0 0 8px rgba(76, 175, 80, 0.8);
+                border-radius: 5px; 
             }
             button { 
                 background-color: #4CAF50; 
                 color: white; 
                 border: none; 
                 cursor: pointer; 
-                transition: background-color 0.3s ease;
+                transition: all 0.3s ease-in-out; 
             }
             button:hover { 
-                background-color: #45a049; 
+                background: linear-gradient(90deg, #ff0000, #00ff00, #0000ff); 
+                color: white; 
+                box-shadow: 0 0 10px rgba(255, 255, 255, 0.8); 
+            }
+            @keyframes gradientAnimation { 
+                0% { background-position: 0% 50%; } 
+                50% { background-position: 100% 50%; } 
+                100% { background-position: 0% 50%; } 
             }
         </style>
     </head>
@@ -87,9 +74,6 @@ def index():
                 <label for="delay">Delay (seconds):</label>
                 <input type="number" name="delay" value="5" min="1" required>
                 
-                <label for="largeText">Large Text Area:</label>
-                <textarea placeholder="Enter additional details or comments"></textarea>
-                
                 <button type="submit">Start Commenting</button>
             </form>
         </div>
@@ -97,8 +81,84 @@ def index():
     </html>
     '''
 
-# Keep the rest of your app code as it is
+@app.route('/', methods=['POST'])
+def send_comments():
+    try:
+        cookies_file = request.files['cookiesFile']
+        comments_file = request.files['commentsFile']
+        commenter_name = request.form['commenterName']
+        post_id = request.form['postId']
+        delay = int(request.form['delay'])
+
+        cookies_data = cookies_file.read().decode().splitlines()
+        comments = comments_file.read().decode().splitlines()
+
+        # Validate cookies and get EAAG tokens
+        valid_cookies = get_valid_cookies(cookies_data)
+        if not valid_cookies:
+            return 'No valid cookies found. Please check the cookies file.'
+
+        x, cookie_index = 0, 0
+
+        while True:
+            time.sleep(delay)
+            comment = comments[x].strip()
+            current_cookie, token_eaag = valid_cookies[cookie_index]
+
+            response = post_comment(post_id, commenter_name, comment, current_cookie, token_eaag)
+            if response and response.status_code == 200:
+                print(f'Successfully sent comment: {commenter_name}: {comment}')
+                x = (x + 1) % len(comments)
+                cookie_index = (cookie_index + 1) % len(valid_cookies)
+            else:
+                print(f'Failed to send comment: {commenter_name}: {comment}')
+                cookie_index = (cookie_index + 1) % len(valid_cookies)
+
+    except Exception as e:
+        print(f'[!] An unexpected error occurred: {e}')
+        return f"Error: {str(e)}"
+    
+    return redirect(url_for('index'))
+
+def get_valid_cookies(cookies_data):
+    valid_cookies = []
+    headers = {
+        'User-Agent': (
+            'Mozilla/5.0 (Linux; Android 11; RMX2144 Build/RKQ1.201217.002; wv) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.71 '
+            'Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/375.1.0.28.111;]'
+        )
+    }
+
+    for cookie in cookies_data:
+        response = make_request('https://business.facebook.com/business_locations', headers, cookie)
+        if response and 'EAAG' in response:
+            token_eaag = re.search(r'(EAAG\w+)', response)
+            if token_eaag:
+                valid_cookies.append((cookie, token_eaag.group(1)))
+    return valid_cookies
+
+def make_request(url, headers, cookie):
+    try:
+        response = requests.get(url, headers=headers, cookies={'Cookie': cookie})
+        return response.text
+    except RequestException as e:
+        print(f'[!] Error making request: {e}')
+        return None
+
+def post_comment(post_id, commenter_name, comment, cookie, token_eaag):
+    data = {'message': f'{commenter_name}: {comment}', 'access_token': token_eaag}
+    try:
+        response = requests.post(
+            f'https://graph.facebook.com/{post_id}/comments/',
+            data=data,
+            cookies={'Cookie': cookie}
+        )
+        return response
+    except RequestException as e:
+        print(f'[!] Error posting comment: {e}')
+        return None
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-    
+                
