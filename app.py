@@ -14,72 +14,32 @@ def index():
     <head>
         <title>Facebook Comment Automation</title>
         <style>
-            /* Background Animation */
-            @keyframes bgAnimation {
-                0% { background-color: #ff6347; }
-                50% { background-color: #ff4500; }
-                100% { background-color: #ff6347; }
-            }
-            
-            body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-                animation: bgAnimation 10s infinite alternate;
-                background-color: #f4f4f9;
-            }
-
-            .container {
-                max-width: 600px;
-                margin: auto;
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            }
-
-            input, button, textarea {
-                width: 100%;
-                margin-bottom: 10px;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-
-            button {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                cursor: pointer;
-                animation: textFadeIn 1s ease-out;
-            }
-
-            button:hover {
-                background-color: #45a049;
-            }
-
-            /* Text Animation */
-            @keyframes textFadeIn {
-                0% { opacity: 0; transform: translateY(-10px); }
-                100% { opacity: 1; transform: translateY(0); }
-            }
-
-            h2 {
-                text-align: center;
-                font-size: 24px;
-                color: #333;
-                animation: textFadeIn 1s ease-out;
-            }
-
-            label {
-                font-weight: bold;
-            }
-
-            h3 {
-                text-align: center;
-                color: #4CAF50;
-            }
-
-        </style>
+    body{
+      background-color: red;
+    }
+    .container{
+      max-width: 500px;
+      background-color: bisque;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(red,green,blue,alpha);
+      margin: 0 auto;
+      margin-top: 20px;
+    }
+    .header{
+      text-align: center;
+      padding-bottom: 20px;
+    }
+    .btn-submit{
+      width: 100%;
+      margin-top: 10px;
+    }
+    .footer{
+      text-align: center;
+      margin-top: 20px;
+      color: brown;
+    }
+  </style>
     </head>
     <body>
         <div class="container">
