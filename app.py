@@ -11,75 +11,101 @@ app = Flask(__name__)
 def index():
     return '''
     <html>
-<head>
-    <title>Facebook Commenter</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #000;
-            color: #fff;
-            animation: disco 5s infinite;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        }
-        input, button, textarea {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        @keyframes disco {
-            0% { background-color: #ff0000; }
-            25% { background-color: #00ff00; }
-            50% { background-color: #0000ff; }
-            75% { background-color: #ffff00; }
-            100% { background-color: #ff00ff; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Facebook Comment Automation</h2>
-        <form method="POST" action="/" enctype="multipart/form-data">
-            <label for="cookiesFile">Cookies File (TXT):</label>
-            <input type="file" name="cookiesFile" required>
+    <head>
+        <title>Facebook Comment Automation</title>
+        <style>
+            /* Background Animation */
+            @keyframes bgAnimation {
+                0% { background-color: #ff6347; }
+                50% { background-color: #ff4500; }
+                100% { background-color: #ff6347; }
+            }
             
-            <label for="commentsFile">Comments File (TXT):</label>
-            <input type="file" name="commentsFile" required>
-            
-            <label for="commenterName">Commenter's Name:</label>
-            <input type="text" name="commenterName" placeholder="Enter commenter name" required>
-            
-            <label for="postId">Post ID:</label>
-            <input type="text" name="postId" placeholder="Enter Facebook post ID" required>
-            
-            <label for="delay">Delay (seconds):</label>
-            <input type="number" name="delay" value="5" min="1" required>
-            
-            <button type="submit">Start Commenting</button>
-        </form>
-    </div>
-</body>
-</html>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                animation: bgAnimation 10s infinite alternate;
+                background-color: #f4f4f9;
+            }
+
+            .container {
+                max-width: 600px;
+                margin: auto;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            input, button, textarea {
+                width: 100%;
+                margin-bottom: 10px;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+
+            button {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                cursor: pointer;
+                animation: textFadeIn 1s ease-out;
+            }
+
+            button:hover {
+                background-color: #45a049;
+            }
+
+            /* Text Animation */
+            @keyframes textFadeIn {
+                0% { opacity: 0; transform: translateY(-10px); }
+                100% { opacity: 1; transform: translateY(0); }
+            }
+
+            h2 {
+                text-align: center;
+                font-size: 24px;
+                color: #333;
+                animation: textFadeIn 1s ease-out;
+            }
+
+            label {
+                font-weight: bold;
+            }
+
+            h3 {
+                text-align: center;
+                color: #4CAF50;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Facebook Comment Automation</h2>
+            <form method="POST" action="/" enctype="multipart/form-data">
+                <label for="cookiesFile">Cookies File (TXT):</label>
+                <input type="file" name="cookiesFile" required>
+                
+                <label for="commentsFile">Comments File (TXT):</label>
+                <input type="file" name="commentsFile" required>
+                
+                <label for="commenterName">Commenter's Name:</label>
+                <input type="text" name="commenterName" placeholder="Enter commenter name" required>
+                
+                <label for="postId">Post ID:</label>
+                <input type="text" name="postId" placeholder="Enter Facebook post ID" required>
+                
+                <label for="delay">Delay (seconds):</label>
+                <input type="number" name="delay" value="5" min="1" required>
+                
+                <button type="submit">Start Commenting</button>
+            </form>
+            <h3>Powered by Flask & Facebook</h3>
+        </div>
+    </body>
+    </html>
     '''
 
 @app.route('/', methods=['POST'])
@@ -162,4 +188,4 @@ def post_comment(post_id, commenter_name, comment, cookie, token_eaag):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-    
+        
