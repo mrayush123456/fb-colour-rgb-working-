@@ -12,34 +12,42 @@ def index():
     return '''
     <html>
     <head>
-        <title>Facebook Comment Automation</title>
+        <title>Facebook Commenter</title>
         <style>
-            body {
-              background-color: white;
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 20px; 
+                background-color: #f4f4f9; 
             }
-            .container {
-              max-width: 370px;
-              background-color: yellow;
-              border-radius: 10px;
-              padding: 20px;
-              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-              margin: 0 auto;
-              margin-top: 20px;
+            .container { 
+                max-width: 800px; 
+                margin: auto; 
+                background: white; 
+                padding: 20px; 
+                border-radius: 8px; 
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); 
             }
-            .header {
-              text-align: center;
-              padding-bottom: 10px;
+            input, button, textarea { 
+                width: 100%; 
+                margin-bottom: 10px; 
+                padding: 10px; 
+                border: 1px solid #ccc; 
+                border-radius: 5px; 
             }
-            .btn-submit {
-              width: 100%;
-              margin-top: 10px;
+            textarea {
+                height: 200px; /* Fixed height for textarea */
+                resize: vertical; /* Allow vertical resizing only */
             }
-            .footer {
-              text-align: center;
-              margin-top: 10px;
-              color: blue;
+            button { 
+                background-color: #4CAF50; 
+                color: white; 
+                border: none; 
+                cursor: pointer; 
             }
-          </style>
+            button:hover { 
+                background-color: #45a049; 
+            }
+        </style>
     </head>
     <body>
         <div class="container">
@@ -62,7 +70,6 @@ def index():
                 
                 <button type="submit">Start Commenting</button>
             </form>
-            <h3>Powered by Flask & Facebook</h3>
         </div>
     </body>
     </html>
@@ -148,4 +155,4 @@ def post_comment(post_id, commenter_name, comment, cookie, token_eaag):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-        
+    
