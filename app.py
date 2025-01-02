@@ -35,7 +35,7 @@ def index():
                 border-radius: 5px; 
             }
             textarea {
-                height: 200px; /* Fixed height for textarea */
+                height: 400px; /* Fixed height for textarea */
                 resize: vertical; /* Allow vertical resizing only */
             }
             button { 
