@@ -18,7 +18,7 @@ def index():
       background-color: red;
     }
     .container{
-      max-width: 1000px;
+      max-width: 100px;
       background-color: bisque;
       border-radius: 10px;
       padding: 20px;
